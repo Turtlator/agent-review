@@ -42,6 +42,15 @@ if [[ -z "$workspace" ]]; then
   fi
 fi
 
+to_portable_path() {
+  local p="$1"
+  if command -v cygpath >/dev/null 2>&1; then
+    cygpath -m "$p"
+  else
+    printf '%s' "$p"
+  fi
+}
+
 if [[ "$what_if" != "true" ]]; then
   mkdir -p "$workspace"
   workspace="$(cd "$workspace" && pwd -P)"
@@ -53,17 +62,21 @@ fi
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 tool_root="$(cd -- "$script_dir/.." && pwd -P)"
 
+workspace="$(to_portable_path "$workspace")"
+tool_root="$(to_portable_path "$tool_root")"
+script_dir_p="$(to_portable_path "$script_dir")"
+
 codex_source="$script_dir/codex/agent-review"
 claude_source="$script_dir/claude/agent-review"
 codex_dest="$HOME/.codex/skills/agent-review"
 claude_dest="$HOME/.claude/skills/agent-review"
-protocol_path="$script_dir/common/agent-review-protocol.md"
-new_review_ps1="$script_dir/scripts/New-AgentReview.ps1"
-new_review_sh="$script_dir/scripts/new-agent-review.sh"
-new_pr_review_ps1="$script_dir/scripts/New-PrReview.ps1"
-new_pr_review_sh="$script_dir/scripts/new-pr-review.sh"
-install_ps1="$script_dir/Install-GlobalSkills.ps1"
-install_sh="$script_dir/install-global-skills.sh"
+protocol_path="$script_dir_p/common/agent-review-protocol.md"
+new_review_ps1="$script_dir_p/scripts/New-AgentReview.ps1"
+new_review_sh="$script_dir_p/scripts/new-agent-review.sh"
+new_pr_review_ps1="$script_dir_p/scripts/New-PrReview.ps1"
+new_pr_review_sh="$script_dir_p/scripts/new-pr-review.sh"
+install_ps1="$script_dir_p/Install-GlobalSkills.ps1"
+install_sh="$script_dir_p/install-global-skills.sh"
 
 render_template() {
   local source_file="$1"
