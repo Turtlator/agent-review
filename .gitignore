@@ -1,0 +1,12 @@
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor
+.vscode/
+.idea/
+
+# Workspace data (in case someone points the workspace at the tool repo)
+/reviews/
+/archive/
