@@ -120,6 +120,56 @@ Severity guide:
 - `P2` - correctness, maintainability, or test risk worth fixing before merge
 - `P3` - minor issue, cleanup, or optional improvement
 
+## Collaborative Review (Both Agents)
+
+When the human operator wants both Codex and Claude to review the same change and reconcile findings, run a three-phase flow. This applies to any review (local branch or GitHub PR) but is the default for PR reviews created via the PR helper script.
+
+### Phase 1 - Independent Review
+
+Each agent reviews `request.md` (and `pr.diff` if present) without reading the other agent's response file. Independence is the whole point - skipping it lets the second reviewer anchor on the first reviewer's framing.
+
+Example prompts:
+
+```text
+Use the agent-review skill. Read <workspace>/reviews/<folder>/request.md and pr.diff. Write your review to claude.md. Do not read codex.md.
+```
+
+```text
+Use the agent-review skill. Read <workspace>/reviews/<folder>/request.md and pr.diff. Write your review to codex.md. Do not read claude.md.
+```
+
+### Phase 2 - Cross-Check
+
+After both independent reviews exist, ask each agent to read the other's file and append a `## Cross-check` section to *their own* file. Each agent still only edits their own file.
+
+Cross-check section format:
+
+```md
+## Cross-check (vs <other agent>)
+
+### Agreed
+- <ref to other's finding>: <why I agree>
+
+### Disagreed
+- <ref to other's finding>: <why I disagree, with evidence>
+
+### They caught, I missed
+- <new finding from other's file>: <my read on it>
+
+### I still stand by
+- <my findings they did not raise>: <why these still apply>
+```
+
+### Phase 3 - Synthesis
+
+One agent (operator's pick) reads both files plus both cross-checks and writes `synthesis.md`. Three buckets:
+
+- **Confirmed** - both reviewers flagged it. High signal.
+- **Disputed** - one calls it a bug, the other disagrees. Include both sides' reasoning.
+- **Single-source** - only one reviewer flagged it. Lower signal, still worth a sanity check.
+
+Synthesis is agent-produced and is not the final call. The human operator still records the binding decision in `resolution.md`.
+
 ## Resolving a Review
 
 Use `resolution.md` to record the human decision and final state:

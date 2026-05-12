@@ -53,6 +53,7 @@ Tool repo:
     review-request.md
     review-response.md
     resolution.md
+    synthesis.md
   skills/
     Install-GlobalSkills.ps1
     install-global-skills.sh
@@ -74,9 +75,10 @@ $HOME/.agent-review/
   reviews/
     2026-04-27-example-topic/
       request.md
-      codex.md
-      claude.md
-      resolution.md
+      codex.md       # Codex's independent review
+      claude.md      # Claude's independent review
+      synthesis.md   # consolidated view after both reviews + cross-checks
+      resolution.md  # human's final decision
   archive/
 ```
 
@@ -199,17 +201,39 @@ Prerequisites:
 - GitHub CLI installed (`gh --version`) and authenticated (`gh auth login`) with access to the PR's repo
 - On macOS/Linux, `jq` (e.g. `brew install jq`)
 
-Then point each agent at the folder, e.g.:
-
-```text
-Use the agent-review skill. Read <review-folder>/request.md and pr.diff, then write your review to claude.md.
-```
-
-```text
-Use the agent-review skill. Read claude.md in <review-folder> and write Codex's response to codex.md.
-```
-
 The script only pulls data from GitHub — it does **not** post reviews back to the PR. If you want findings on the PR itself, paste from `claude.md` / `codex.md` or run `gh pr comment`.
+
+### Collaborative PR Review (Independent → Cross-check → Synthesis)
+
+When you want both Codex and Claude to review the same PR and reconcile findings, run a three-phase flow. The full protocol is in `skills/common/agent-review-protocol.md`; the prompts below are the practical version.
+
+**Phase 1 — Independent review.** Each agent reviews without seeing the other's file. The "do not read..." line matters; without it the second reviewer anchors on the first.
+
+```text
+Use the agent-review skill. Read <review-folder>/request.md and pr.diff. Write your review to claude.md. Do not read codex.md.
+```
+
+```text
+Use the agent-review skill. Read <review-folder>/request.md and pr.diff. Write your review to codex.md. Do not read claude.md.
+```
+
+**Phase 2 — Cross-check.** Once both independent reviews exist, ask each agent to read the other's file and append a `## Cross-check` section to **their own** file (agreed / disagreed / they caught I missed / I still stand by).
+
+```text
+Use the agent-review skill. Read codex.md in <review-folder>. Append a "## Cross-check" section to claude.md per the protocol.
+```
+
+```text
+Use the agent-review skill. Read claude.md in <review-folder>. Append a "## Cross-check" section to codex.md per the protocol.
+```
+
+**Phase 3 — Synthesis.** Pick one agent to consolidate into `synthesis.md` (confirmed / disputed / single-source).
+
+```text
+Use the agent-review skill. Read claude.md and codex.md in <review-folder> (both reviews plus their cross-check sections). Write the consolidated synthesis to synthesis.md per the protocol.
+```
+
+Then record your final call in `resolution.md` as usual.
 
 ## Using The Skill
 

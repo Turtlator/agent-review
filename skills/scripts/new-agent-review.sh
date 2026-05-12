@@ -89,6 +89,7 @@ copy_template() {
 
 copy_template "review-request.md" "request.md"
 copy_template "resolution.md" "resolution.md"
+copy_template "synthesis.md" "synthesis.md"
 
 request_path="$review_folder/request.md"
 content="$(cat "$request_path")"

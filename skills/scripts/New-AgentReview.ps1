@@ -49,6 +49,7 @@ New-Item -ItemType Directory -Path $reviewFolder -Force | Out-Null
 $files = @{
     'review-request.md' = 'request.md'
     'resolution.md' = 'resolution.md'
+    'synthesis.md' = 'synthesis.md'
 }
 
 foreach ($entry in $files.GetEnumerator()) {

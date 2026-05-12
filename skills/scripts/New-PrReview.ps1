@@ -103,13 +103,15 @@ if ((Test-Path $reviewFolder) -and -not $Force) {
 
 New-Item -ItemType Directory -Path $reviewFolder -Force | Out-Null
 
-$resolutionSource = Join-Path $templateRoot 'resolution.md'
-$resolutionDest = Join-Path $reviewFolder 'resolution.md'
-if (-not (Test-Path $resolutionSource)) {
-    throw "Missing template: $resolutionSource"
-}
-if (-not (Test-Path $resolutionDest) -or $Force) {
-    Copy-Item -Path $resolutionSource -Destination $resolutionDest -Force
+foreach ($name in @('resolution.md', 'synthesis.md')) {
+    $src = Join-Path $templateRoot $name
+    $dst = Join-Path $reviewFolder $name
+    if (-not (Test-Path $src)) {
+        throw "Missing template: $src"
+    }
+    if (-not (Test-Path $dst) -or $Force) {
+        Copy-Item -Path $src -Destination $dst -Force
+    }
 }
 
 $fileLines = @()

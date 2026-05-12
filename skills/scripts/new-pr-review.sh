@@ -158,15 +158,17 @@ fi
 
 mkdir -p "$review_folder"
 
-resolution_src="$template_root/resolution.md"
-resolution_dest="$review_folder/resolution.md"
-if [[ ! -f "$resolution_src" ]]; then
-  echo "Missing template: $resolution_src" >&2
-  exit 1
-fi
-if [[ ! -f "$resolution_dest" || "$force" == "true" ]]; then
-  cp "$resolution_src" "$resolution_dest"
-fi
+for name in resolution.md synthesis.md; do
+  src="$template_root/$name"
+  dst="$review_folder/$name"
+  if [[ ! -f "$src" ]]; then
+    echo "Missing template: $src" >&2
+    exit 1
+  fi
+  if [[ ! -f "$dst" || "$force" == "true" ]]; then
+    cp "$src" "$dst"
+  fi
+done
 
 state_line="$state"
 if [[ "$is_draft" == "true" ]]; then
