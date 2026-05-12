@@ -66,6 +66,8 @@ Tool repo:
       new-agent-review.sh
       New-PrReview.ps1
       new-pr-review.sh
+      Collab-Review.ps1
+      collab-review.sh
 ```
 
 Workspace (created on first install):
@@ -203,34 +205,50 @@ Prerequisites:
 
 The script only pulls data from GitHub — it does **not** post reviews back to the PR. If you want findings on the PR itself, paste from `claude.md` / `codex.md` or run `gh pr comment`.
 
-### Collaborative PR Review (Independent → Cross-check → Synthesis)
+### Collaborative PR Review (Asymmetric: Initiator + Requested)
 
-When you want both Codex and Claude to review the same PR and reconcile findings, run a three-phase flow. The full protocol is in `skills/common/agent-review-protocol.md`; the prompts below are the practical version.
+When you want both Codex and Claude to review the same PR and reconcile findings, run a four-step asymmetric flow with one initiator and one requested reviewer. Full protocol in `skills/common/agent-review-protocol.md`.
 
-**Phase 1 — Independent review.** Each agent reviews without seeing the other's file. The "do not read..." line matters; without it the second reviewer anchors on the first.
+#### Automated (recommended)
+
+A single command runs all four steps headlessly, with steps 1 and 2 in parallel:
+
+Windows / PowerShell:
+
+```powershell
+<tool-root>\skills\scripts\Collab-Review.ps1 -PullRequest "https://github.com/owner/repo/pull/1234" [-Initiator claude]
+```
+
+macOS / Linux:
+
+```bash
+<tool-root>/skills/scripts/collab-review.sh --pull-request "https://github.com/owner/repo/pull/1234" [--initiator claude]
+```
+
+Requires `claude` and `codex` CLIs in PATH (plus `gh`/`jq` for the PR fetch). Each phase's log is written to `<review-folder>/.collab/phaseN-<agent>.log` for debugging. Add `--unsafe` / `-Unsafe` for true unattended runs (passes `--dangerously-skip-permissions` to Claude and `--dangerously-bypass-approvals-and-sandbox` to Codex).
+
+#### Manual (for stepping through or for non-PR reviews)
+
+**Step 1 + 2 — Both review independently** (parallel). Each agent reads `request.md` + `pr.diff` and writes to its own file. The "do not read..." line matters — without it the second reviewer anchors on the first.
 
 ```text
-Use the agent-review skill. Read <review-folder>/request.md and pr.diff. Write your review to claude.md. Do not read codex.md.
+Use the agent-review skill. Read <review-folder>/request.md and pr.diff. Write your independent review to claude.md. Do not read codex.md.
 ```
 
 ```text
-Use the agent-review skill. Read <review-folder>/request.md and pr.diff. Write your review to codex.md. Do not read claude.md.
+Use the agent-review skill. Read <review-folder>/request.md and pr.diff. Write your independent review to codex.md. Do not read claude.md.
 ```
 
-**Phase 2 — Cross-check.** Once both independent reviews exist, ask each agent to read the other's file and append a `## Cross-check` section to **their own** file (agreed / disagreed / they caught I missed / I still stand by).
+**Step 3 — Requested cross-checks initiator.** Only the requested agent does this. Append a `## Cross-check` section to their own file (agreed / disagreed / they caught I missed / I still stand by).
 
 ```text
-Use the agent-review skill. Read codex.md in <review-folder>. Append a "## Cross-check" section to claude.md per the protocol.
+Use the agent-review skill. Read claude.md in <review-folder>. Append a "## Cross-check (vs claude)" section to codex.md per the protocol.
 ```
 
-```text
-Use the agent-review skill. Read claude.md in <review-folder>. Append a "## Cross-check" section to codex.md per the protocol.
-```
-
-**Phase 3 — Synthesis.** Pick one agent to consolidate into `synthesis.md` (confirmed / disputed / single-source).
+**Step 4 — Initiator synthesizes.**
 
 ```text
-Use the agent-review skill. Read claude.md and codex.md in <review-folder> (both reviews plus their cross-check sections). Write the consolidated synthesis to synthesis.md per the protocol.
+Use the agent-review skill. Read claude.md (your own review) and codex.md (their independent review plus their cross-check of yours). Write the consolidated synthesis to synthesis.md per the protocol: confirmed / disputed / single-source.
 ```
 
 Then record your final call in `resolution.md` as usual.

@@ -122,53 +122,72 @@ Severity guide:
 
 ## Collaborative Review (Both Agents)
 
-When the human operator wants both Codex and Claude to review the same change and reconcile findings, run a three-phase flow. This applies to any review (local branch or GitHub PR) but is the default for PR reviews created via the PR helper script.
+When the human operator wants both Codex and Claude to review the same change and reconcile findings, run a four-step asymmetric flow with one initiator and one requested reviewer. This applies to any review (local branch or GitHub PR) but is the default for PR reviews created via the PR helper script.
 
-### Phase 1 - Independent Review
+Role assignment:
 
-Each agent reviews `request.md` (and `pr.diff` if present) without reading the other agent's response file. Independence is the whole point - skipping it lets the second reviewer anchor on the first reviewer's framing.
+- **Initiator** - the agent the operator turned to first. Performs its own independent review, then later synthesizes everything.
+- **Requested** - the other agent. Performs its own independent review, then cross-checks the initiator's findings.
 
-Example prompts:
+### Step 1 - Initiator Independent Review (parallel with step 2)
+
+Initiator reviews `request.md` (and `pr.diff` if present) without reading the requested agent's file. Writes findings to its own file (`claude.md` or `codex.md`).
+
+### Step 2 - Requested Independent Review (parallel with step 1)
+
+Same as step 1 but for the requested agent, writing to its own file. Independence is the whole point - skipping it lets either reviewer anchor on the other's framing.
+
+Example prompts for steps 1 + 2:
 
 ```text
-Use the agent-review skill. Read <workspace>/reviews/<folder>/request.md and pr.diff. Write your review to claude.md. Do not read codex.md.
+Use the agent-review skill. Read <workspace>/reviews/<folder>/request.md and pr.diff. Write your independent review to claude.md. Do not read codex.md.
 ```
 
 ```text
-Use the agent-review skill. Read <workspace>/reviews/<folder>/request.md and pr.diff. Write your review to codex.md. Do not read claude.md.
+Use the agent-review skill. Read <workspace>/reviews/<folder>/request.md and pr.diff. Write your independent review to codex.md. Do not read claude.md.
 ```
 
-### Phase 2 - Cross-Check
+### Step 3 - Requested Cross-Checks Initiator
 
-After both independent reviews exist, ask each agent to read the other's file and append a `## Cross-check` section to *their own* file. Each agent still only edits their own file.
+Once both independent reviews exist, the requested agent reads the initiator's file and appends a `## Cross-check` section to *its own* file. The requested agent still only edits its own file.
 
 Cross-check section format:
 
 ```md
-## Cross-check (vs <other agent>)
+## Cross-check (vs <initiator>)
 
 ### Agreed
-- <ref to other's finding>: <why I agree>
+- <ref to initiator's finding>: <why I agree>
 
 ### Disagreed
-- <ref to other's finding>: <why I disagree, with evidence>
+- <ref to initiator's finding>: <why I disagree, with evidence>
 
 ### They caught, I missed
-- <new finding from other's file>: <my read on it>
+- <new finding from initiator>: <my read on it>
 
 ### I still stand by
-- <my findings they did not raise>: <why these still apply>
+- <my findings the initiator did not raise>: <why these still apply>
 ```
 
-### Phase 3 - Synthesis
+### Step 4 - Initiator Synthesizes
 
-One agent (operator's pick) reads both files plus both cross-checks and writes `synthesis.md`. Three buckets:
+The initiator reads its own file plus the requested agent's full file (independent review + cross-check section) and writes `synthesis.md`. Three buckets:
 
-- **Confirmed** - both reviewers flagged it. High signal.
-- **Disputed** - one calls it a bug, the other disagrees. Include both sides' reasoning.
+- **Confirmed** - both reviewers flagged it, OR initiator flagged and requested agreed in cross-check. High signal.
+- **Disputed** - one flagged, the other disagreed. Include both sides' reasoning.
 - **Single-source** - only one reviewer flagged it. Lower signal, still worth a sanity check.
 
 Synthesis is agent-produced and is not the final call. The human operator still records the binding decision in `resolution.md`.
+
+### Orchestration
+
+The four steps can be driven manually by prompting each agent in order, or automated with the orchestrator script which invokes each agent's CLI headlessly:
+
+```text
+<tool-root>/skills/scripts/collab-review.sh --pull-request <ref> [--initiator claude|codex]
+```
+
+PowerShell mirror at `<tool-root>/skills/scripts/Collab-Review.ps1`. Steps 1 and 2 run in parallel; steps 3 and 4 are sequential.
 
 ## Resolving a Review
 
