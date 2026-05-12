@@ -47,10 +47,10 @@ foreach ($sub in @('reviews', 'archive')) {
 
 $skillsRoot = Split-Path -Parent $PSCommandPath
 $toolRoot = Split-Path -Parent $skillsRoot
-$codexSource = Join-Path $skillsRoot (Join-Path 'codex' 'agent-review')
-$claudeSource = Join-Path $skillsRoot (Join-Path 'claude' 'agent-review')
-$codexDest = Join-Path $HOME (Join-Path '.codex' (Join-Path 'skills' 'agent-review'))
-$claudeDest = Join-Path $HOME (Join-Path '.claude' (Join-Path 'skills' 'agent-review'))
+$codexSourceRoot = Join-Path $skillsRoot 'codex'
+$claudeSourceRoot = Join-Path $skillsRoot 'claude'
+$codexDestRoot = Join-Path $HOME (Join-Path '.codex' 'skills')
+$claudeDestRoot = Join-Path $HOME (Join-Path '.claude' 'skills')
 
 $tokens = @{
     '{{AGENT_REVIEW_WORKSPACE}}' = Convert-ToPortablePath $Workspace
@@ -95,12 +95,25 @@ function Install-Skill {
     Write-Host "Installed $Name skill to $Destination"
 }
 
+function Install-SkillsFromRoot {
+    param(
+        [Parameter(Mandatory=$true)] [string]$SourceRoot,
+        [Parameter(Mandatory=$true)] [string]$DestRoot,
+        [Parameter(Mandatory=$true)] [string]$AgentLabel
+    )
+    if (-not (Test-Path $SourceRoot)) { return }
+    foreach ($skillDir in Get-ChildItem -Path $SourceRoot -Directory) {
+        $dest = Join-Path $DestRoot $skillDir.Name
+        Install-Skill -Source $skillDir.FullName -Destination $dest -Name "$AgentLabel/$($skillDir.Name)"
+    }
+}
+
 if ($Agent -eq 'Both' -or $Agent -eq 'Codex') {
-    Install-Skill -Source $codexSource -Destination $codexDest -Name 'Codex'
+    Install-SkillsFromRoot -SourceRoot $codexSourceRoot -DestRoot $codexDestRoot -AgentLabel 'Codex'
 }
 
 if ($Agent -eq 'Both' -or $Agent -eq 'Claude') {
-    Install-Skill -Source $claudeSource -Destination $claudeDest -Name 'Claude Code'
+    Install-SkillsFromRoot -SourceRoot $claudeSourceRoot -DestRoot $claudeDestRoot -AgentLabel 'Claude'
 }
 
 Write-Host ''

@@ -61,6 +61,7 @@ Tool repo:
       agent-review-protocol.md
     codex/agent-review/SKILL.md
     claude/agent-review/SKILL.md
+    claude/collab-review/SKILL.md
     scripts/
       New-AgentReview.ps1
       new-agent-review.sh
@@ -209,7 +210,17 @@ The script only pulls data from GitHub — it does **not** post reviews back to 
 
 When you want both Codex and Claude to review the same PR and reconcile findings, run a four-step asymmetric flow with one initiator and one requested reviewer. Full protocol in `skills/common/agent-review-protocol.md`.
 
-#### Automated (recommended)
+#### From inside Claude Code (slash command)
+
+If you are in a Claude Code session, the simplest path is:
+
+```text
+/collab-review https://github.com/owner/repo/pull/1234
+```
+
+This invokes the `collab-review` skill installed under `~/.claude/skills/collab-review/`. The current Claude session is the initiator - you watch Phase 1 + 4 happen live in chat - and it bashes to `codex exec` for Codex's phases. Codex's review is started in the background so phase 1 + 2 run concurrently.
+
+#### From a terminal (orchestrator script)
 
 A single command runs all four steps headlessly, with steps 1 and 2 in parallel:
 

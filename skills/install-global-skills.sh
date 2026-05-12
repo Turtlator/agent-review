@@ -66,10 +66,10 @@ workspace="$(to_portable_path "$workspace")"
 tool_root="$(to_portable_path "$tool_root")"
 script_dir_p="$(to_portable_path "$script_dir")"
 
-codex_source="$script_dir/codex/agent-review"
-claude_source="$script_dir/claude/agent-review"
-codex_dest="$HOME/.codex/skills/agent-review"
-claude_dest="$HOME/.claude/skills/agent-review"
+codex_source_root="$script_dir/codex"
+claude_source_root="$script_dir/claude"
+codex_dest_root="$HOME/.codex/skills"
+claude_dest_root="$HOME/.claude/skills"
 protocol_path="$script_dir_p/common/agent-review-protocol.md"
 new_review_ps1="$script_dir_p/scripts/New-AgentReview.ps1"
 new_review_sh="$script_dir_p/scripts/new-agent-review.sh"
@@ -114,12 +114,25 @@ install_skill() {
   echo "Installed $name skill to $dest_dir"
 }
 
+install_skills_from_root() {
+  local source_root="$1"
+  local dest_root="$2"
+  local agent_label="$3"
+  [[ -d "$source_root" ]] || return 0
+  for skill_dir in "$source_root"/*/; do
+    [[ -d "$skill_dir" ]] || continue
+    local skill_name
+    skill_name="$(basename "$skill_dir")"
+    install_skill "$skill_dir" "$dest_root/$skill_name" "$agent_label/$skill_name"
+  done
+}
+
 if [[ "$agent" == "Both" || "$agent" == "Codex" ]]; then
-  install_skill "$codex_source" "$codex_dest" "Codex"
+  install_skills_from_root "$codex_source_root" "$codex_dest_root" "Codex"
 fi
 
 if [[ "$agent" == "Both" || "$agent" == "Claude" ]]; then
-  install_skill "$claude_source" "$claude_dest" "Claude Code"
+  install_skills_from_root "$claude_source_root" "$claude_dest_root" "Claude"
 fi
 
 if [[ "$what_if" != "true" ]]; then
