@@ -67,6 +67,8 @@ Tool repo:
       new-agent-review.sh
       New-PrReview.ps1
       new-pr-review.sh
+      new-pr-review.mjs
+      post-pr-review.mjs
       Collab-Review.ps1
       collab-review.sh
 ```
@@ -179,6 +181,14 @@ The script prints the new review folder path. Fill out `request.md`, then point 
 
 To have Claude and Codex collaborate on reviewing a GitHub PR, use the PR helper script. It uses the GitHub CLI (`gh`) to fetch PR metadata and a diff snapshot, then writes a pre-filled review folder so both agents start from the same state.
 
+Cross-platform (recommended; only needs `gh` and Node.js, no PowerShell, no `jq`):
+
+```bash
+node <tool-root>/skills/scripts/new-pr-review.mjs --pull-request "https://github.com/owner/repo/pull/1234"
+```
+
+Native-shell variants — pick whichever matches your platform if you'd rather not invoke Node:
+
 Windows / PowerShell:
 
 ```powershell
@@ -202,9 +212,24 @@ The script creates `reviews/YYYY-MM-DD-pr-<num>-<title-slug>/` containing:
 Prerequisites:
 
 - GitHub CLI installed (`gh --version`) and authenticated (`gh auth login`) with access to the PR's repo
-- On macOS/Linux, `jq` (e.g. `brew install jq`)
+- Node.js 18+ for the `.mjs` helpers; or `jq` for the bash variant; or PowerShell for the `.ps1` variant
 
-The script only pulls data from GitHub — it does **not** post reviews back to the PR. If you want findings on the PR itself, paste from `claude.md` / `codex.md` or run `gh pr comment`.
+The fetch script only pulls data from GitHub. To mirror the synthesised review back to the PR, use the optional `post-pr-review.mjs` helper described under "Posting Findings Back to GitHub" below — otherwise paste from `synthesis.md` (or `claude.md` / `codex.md`) or run `gh pr comment` by hand.
+
+### Posting Findings Back to GitHub
+
+Once `synthesis.md` exists, you can push it back to the PR as a review:
+
+```bash
+node <tool-root>/skills/scripts/post-pr-review.mjs --review <review-folder> --event COMMENT
+```
+
+- `--body` defaults to `<review-folder>/synthesis.md`; pass an alternative path to use a different file.
+- `--event` accepts `APPROVE`, `COMMENT`, or `REQUEST_CHANGES`. Default is `COMMENT`.
+- Inline comments come from `<review-folder>/comments.json` if that file exists. It is a JSON array of `{ path, line, body, side?, start_line?, start_side? }`. `path` is repo-relative; `line` is the line number in the new file; `side` defaults to `RIGHT`.
+- Add `--dry-run` to print the payload without posting.
+
+The script reads the PR URL from `request.md`, resolves the head SHA via `gh pr view`, and POSTs to `repos/<owner>/<repo>/pulls/<num>/reviews`. It deliberately omits the leading slash on that endpoint — Git Bash and other MSYS shells on Windows rewrite leading-slash arguments to filesystem paths, which makes `gh api` reject the URL.
 
 ### Collaborative PR Review (Asymmetric: Initiator + Requested)
 

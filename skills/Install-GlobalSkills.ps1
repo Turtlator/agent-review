@@ -60,6 +60,8 @@ $tokens = @{
     '{{NEW_REVIEW_SH}}' = Convert-ToPortablePath (Join-Path $skillsRoot (Join-Path 'scripts' 'new-agent-review.sh'))
     '{{NEW_PR_REVIEW_PS1}}' = Convert-ToPortablePath (Join-Path $skillsRoot (Join-Path 'scripts' 'New-PrReview.ps1'))
     '{{NEW_PR_REVIEW_SH}}' = Convert-ToPortablePath (Join-Path $skillsRoot (Join-Path 'scripts' 'new-pr-review.sh'))
+    '{{NEW_PR_REVIEW_MJS}}' = Convert-ToPortablePath (Join-Path $skillsRoot (Join-Path 'scripts' 'new-pr-review.mjs'))
+    '{{POST_PR_REVIEW_MJS}}' = Convert-ToPortablePath (Join-Path $skillsRoot (Join-Path 'scripts' 'post-pr-review.mjs'))
     '{{INSTALL_PS1}}' = Convert-ToPortablePath (Join-Path $skillsRoot 'Install-GlobalSkills.ps1')
     '{{INSTALL_SH}}' = Convert-ToPortablePath (Join-Path $skillsRoot 'install-global-skills.sh')
 }

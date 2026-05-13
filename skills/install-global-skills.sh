@@ -75,6 +75,8 @@ new_review_ps1="$script_dir_p/scripts/New-AgentReview.ps1"
 new_review_sh="$script_dir_p/scripts/new-agent-review.sh"
 new_pr_review_ps1="$script_dir_p/scripts/New-PrReview.ps1"
 new_pr_review_sh="$script_dir_p/scripts/new-pr-review.sh"
+new_pr_review_mjs="$script_dir_p/scripts/new-pr-review.mjs"
+post_pr_review_mjs="$script_dir_p/scripts/post-pr-review.mjs"
 install_ps1="$script_dir_p/Install-GlobalSkills.ps1"
 install_sh="$script_dir_p/install-global-skills.sh"
 
@@ -88,6 +90,8 @@ render_template() {
     -e "s|{{NEW_REVIEW_SH}}|$new_review_sh|g" \
     -e "s|{{NEW_PR_REVIEW_PS1}}|$new_pr_review_ps1|g" \
     -e "s|{{NEW_PR_REVIEW_SH}}|$new_pr_review_sh|g" \
+    -e "s|{{NEW_PR_REVIEW_MJS}}|$new_pr_review_mjs|g" \
+    -e "s|{{POST_PR_REVIEW_MJS}}|$post_pr_review_mjs|g" \
     -e "s|{{INSTALL_PS1}}|$install_ps1|g" \
     -e "s|{{INSTALL_SH}}|$install_sh|g" \
     "$source_file"
@@ -139,6 +143,11 @@ if [[ "$what_if" != "true" ]]; then
   for sh_script in "$new_review_sh" "$new_pr_review_sh" "$install_sh"; do
     if [[ -f "$sh_script" && ! -x "$sh_script" ]]; then
       chmod +x "$sh_script" || true
+    fi
+  done
+  for mjs_script in "$script_dir/scripts/new-pr-review.mjs" "$script_dir/scripts/post-pr-review.mjs"; do
+    if [[ -f "$mjs_script" && ! -x "$mjs_script" ]]; then
+      chmod +x "$mjs_script" || true
     fi
   done
 fi

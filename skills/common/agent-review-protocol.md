@@ -72,25 +72,31 @@ The request should answer:
 
 When the change under review is a GitHub pull request, prefer the helper script over a hand-crafted folder. It pulls PR metadata and a diff snapshot via `gh` so both agents see the same starting state.
 
-The installed skill provides absolute script paths. The patterns below use `<tool-root>` for that location:
+The installed skill provides absolute script paths. The patterns below use `<tool-root>` for that location.
 
-Windows / PowerShell:
+Cross-platform (recommended; only requires `gh` and Node.js):
+
+```bash
+node <tool-root>/skills/scripts/new-pr-review.mjs --pull-request <url-or-owner/repo#num-or-number> [--repo <local repo path>]
+```
+
+Native-shell variants — use these when the user prefers them, or when Node is unavailable:
 
 ```powershell
 <tool-root>/skills/scripts/New-PrReview.ps1 -PullRequest <url-or-owner/repo#num-or-number> [-Repo <local repo path>]
 ```
 
-macOS / Linux (requires `gh` and `jq`):
-
 ```bash
 <tool-root>/skills/scripts/new-pr-review.sh --pull-request <url-or-owner/repo#num-or-number> [--repo <local repo path>]
 ```
+
+The bash variant additionally requires `jq`. The PowerShell variant needs PowerShell to be permitted in the agent's settings. The Node helper avoids both dependencies.
 
 - The `--pull-request` (or `-PullRequest`) arg accepts the PR URL, `owner/repo#number`, or just `number` when `--repo` points at a local clone whose default remote resolves the PR.
 - The script writes a dated folder named `pr-<num>-<slug>` containing `request.md`, `resolution.md`, and `pr.diff` (the diff snapshot at creation time).
 - `request.md` is pre-filled with title, body, base/head branches, author, state, file list, and the PR URL. Reviewers should treat `pr.diff` as the source of truth for what is being reviewed; if the PR has moved on, re-run `gh pr diff <pr>` from the target repo.
 - For deeper inspection a reviewer can run `gh pr checkout <num>` inside the target repo to get the branch locally.
-- The script does **not** post anything back to GitHub. Agent reviews stay in `claude.md` / `codex.md`. If the human operator wants findings on the PR itself, they paste or `gh pr comment` from the relevant review file.
+- By default the helper does not post anything back to GitHub; agent reviews live in `claude.md` / `codex.md`. To mirror the synthesised review onto the PR, run the optional `post-pr-review.mjs` helper (see "Posting Findings Back to GitHub" below). If the operator prefers to paste by hand, that still works.
 
 ## Responding to a Review
 
@@ -178,6 +184,20 @@ The initiator reads its own file plus the requested agent's full file (independe
 - **Single-source** - only one reviewer flagged it. Lower signal, still worth a sanity check.
 
 Synthesis is agent-produced and is not the final call. The human operator still records the binding decision in `resolution.md`.
+
+### Step 5 (optional) - Post Findings Back to GitHub
+
+If the user wants the synthesis on the PR itself, run the cross-platform helper:
+
+```bash
+node <tool-root>/skills/scripts/post-pr-review.mjs --review <review-folder> --event COMMENT
+```
+
+Defaults: `--body` is `synthesis.md`, `--event` is `COMMENT`, and inline comments are read from `comments.json` in the review folder if that file exists. Supported events are `APPROVE`, `COMMENT`, and `REQUEST_CHANGES`.
+
+To attach inline comments, write `comments.json` next to `synthesis.md` as a JSON array of `{ path, line, body, side?, start_line?, start_side? }` entries. `path` is repo-relative and `line` is the line number in the new file (`side: "RIGHT"` is the default).
+
+The helper resolves the PR URL from `request.md`, fetches the current head SHA via `gh pr view`, and POSTs the payload via `gh api repos/<owner>/<repo>/pulls/<num>/reviews`. The endpoint is intentionally written *without* a leading slash: Git Bash and other MSYS shells on Windows rewrite leading-slash arguments to filesystem paths, which makes `gh` reject the URL. Any future automation that talks to `gh api` should follow the same convention.
 
 ### Orchestration
 

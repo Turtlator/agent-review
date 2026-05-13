@@ -33,17 +33,23 @@ On macOS/Linux:
 {{NEW_REVIEW_SH}} --slug "short-topic" --repo "<absolute repo path>"
 ```
 
-Create a review folder from a GitHub pull request (pulls PR metadata and diff via `gh`):
+Create a review folder from a GitHub pull request (pulls PR metadata and diff via `gh`). The Node helper is the cross-platform default — it only needs `gh` and Node.js, so it works under any permission posture and without `jq`:
+
+```bash
+node {{NEW_PR_REVIEW_MJS}} --pull-request "<url | owner/repo#num | num>" [--repo "<absolute repo path>"]
+```
+
+Platform-specific equivalents (use only if the user prefers the native shell variant):
 
 ```powershell
 {{NEW_PR_REVIEW_PS1}} -PullRequest "<url | owner/repo#num | num>" [-Repo "<absolute repo path>"]
 ```
 
-On macOS/Linux (requires `gh` and `jq`):
-
 ```bash
 {{NEW_PR_REVIEW_SH}} --pull-request "<url | owner/repo#num | num>" [--repo "<absolute repo path>"]
 ```
+
+The bash variant additionally requires `jq`. If neither PowerShell nor `jq` is available, fall back to the Node helper.
 
 Install or refresh the global Codex and Claude skills:
 

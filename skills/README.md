@@ -11,11 +11,16 @@ agent-review/skills/
   common/agent-review-protocol.md
   codex/agent-review/SKILL.md
   claude/agent-review/SKILL.md
+  claude/collab-review/SKILL.md
   scripts/
     New-AgentReview.ps1
     new-agent-review.sh
     New-PrReview.ps1
     new-pr-review.sh
+    new-pr-review.mjs       # cross-platform PR helper (gh + Node, no jq)
+    post-pr-review.mjs      # optional: post synthesis back to the PR
+    Collab-Review.ps1
+    collab-review.sh
 ```
 
 The Codex and Claude skills are intentionally thin. They both point to `common/agent-review-protocol.md`, so protocol changes can be made once and picked up by both agents.

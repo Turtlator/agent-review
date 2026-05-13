@@ -78,7 +78,7 @@ run_gh() {
   fi
 }
 
-fields='number,title,body,headRefName,baseRefName,url,author,state,isDraft,files,additions,deletions,headRepositoryOwner,headRepository,baseRepository'
+fields='number,title,body,headRefName,baseRefName,url,author,state,isDraft,files,additions,deletions,headRepositoryOwner,headRepository'
 if ! pr_json="$(run_gh pr view "$pr_ref" --json "$fields")"; then
   echo "Failed to fetch PR via 'gh pr view $pr_ref'. Confirm the reference is valid and you are authenticated ('gh auth status')." >&2
   exit 1
@@ -101,17 +101,11 @@ additions="$(jq_field '.additions')"
 deletions="$(jq_field '.deletions')"
 file_count="$(jq_field '.files | length')"
 
-base_full="$(jq_field '
-  if .baseRepository and .baseRepository.owner and .baseRepository.owner.login and .baseRepository.name
-  then "\(.baseRepository.owner.login)/\(.baseRepository.name)"
-  else "" end
-')"
-if [[ -z "$base_full" ]]; then
-  if [[ "$url" =~ github\.com/([^/]+)/([^/]+)/pull/ ]]; then
-    base_full="${BASH_REMATCH[1]}/${BASH_REMATCH[2]}"
-  else
-    base_full="(unknown)"
-  fi
+base_full=""
+if [[ "$url" =~ github\.com/([^/]+)/([^/]+)/pull/ ]]; then
+  base_full="${BASH_REMATCH[1]}/${BASH_REMATCH[2]}"
+else
+  base_full="(unknown)"
 fi
 
 head_full="$(jq_field '

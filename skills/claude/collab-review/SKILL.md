@@ -24,13 +24,20 @@ If no PR ref is provided, ask the user for one before proceeding.
 
 ### Step 0 - Create the review folder
 
-Use the PR helper to fetch metadata and create the folder. On Windows, prefer the PowerShell helper (no `jq` dependency); on macOS/Linux use the bash helper.
+Use the PR helper to fetch metadata and create the folder. The Node helper is the cross-platform default — it only needs `gh` and Node.js, so it works regardless of the user's PowerShell or `jq` situation:
+
+```text
+Cross-platform (recommended):
+  node {{NEW_PR_REVIEW_MJS}} --pull-request "<pr-ref>"
+```
+
+Fall back to a shell-specific variant only if the user explicitly asks or if Node is not available:
 
 ```text
 Windows PowerShell:
   {{NEW_PR_REVIEW_PS1}} -PullRequest "<pr-ref>"
 
-macOS/Linux bash:
+macOS/Linux bash (requires `jq`):
   {{NEW_PR_REVIEW_SH}} --pull-request "<pr-ref>"
 ```
 
@@ -80,6 +87,34 @@ Write `<review-folder>/synthesis.md` per the protocol's three buckets:
 - **Disputed** - one flagged, the other rejected it (include both sides' reasoning)
 - **Single-source** - only one reviewer raised it (lower signal, still worth a sanity check)
 
+### Step 5 (optional) - Post findings back to the PR
+
+If the user asks for the synthesis to land on the PR itself (rather than copying by hand), run:
+
+```text
+node {{POST_PR_REVIEW_MJS}} --review "<review-folder>" --event COMMENT
+```
+
+Defaults:
+
+- `--body` defaults to `<review-folder>/synthesis.md`.
+- `--event` defaults to `COMMENT`. Use `APPROVE` or `REQUEST_CHANGES` only when the user explicitly says so.
+- Inline comments come from `<review-folder>/comments.json` if that file exists; otherwise the post is a top-level review body only.
+
+To include inline comments, write `comments.json` in the review folder before posting. Schema is a JSON array of:
+
+```json
+[
+  { "path": "src/foo.ts", "line": 42, "body": "Comment text", "side": "RIGHT" }
+]
+```
+
+`side` defaults to `RIGHT` (the new file). For a multi-line range, add `start_line` and optionally `start_side`. Always derive `path` and `line` from `pr.diff` so the line numbers match what GitHub expects.
+
+The script reads the PR URL from `request.md`, resolves the current head SHA via `gh pr view`, and POSTs to `repos/<owner>/<repo>/pulls/<num>/reviews` (no leading slash — Git Bash on Windows otherwise rewrites it to a filesystem path).
+
+Use `--dry-run` to print the payload without posting.
+
 ## Reporting back to the user
 
 When all four steps complete, tell the user:
@@ -87,6 +122,7 @@ When all four steps complete, tell the user:
 1. The review folder path
 2. A one-line count summary, e.g. "Synthesis: 5 confirmed, 1 disputed, 3 single-source"
 3. Remind them the final call goes in `resolution.md` and they should read `synthesis.md` first
+4. If you ran Step 5, include the URL gh returned for the posted review
 
 ## Failure handling
 

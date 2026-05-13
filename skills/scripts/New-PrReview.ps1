@@ -62,7 +62,7 @@ function Invoke-Gh {
     return [pscustomobject]@{ Output = $out; ExitCode = $code }
 }
 
-$fields = 'number,title,body,headRefName,baseRefName,url,author,state,isDraft,files,additions,deletions,headRepositoryOwner,headRepository,baseRepository'
+$fields = 'number,title,body,headRefName,baseRefName,url,author,state,isDraft,files,additions,deletions,headRepositoryOwner,headRepository'
 $viewResult = Invoke-Gh -GhArgs @('pr', 'view', $PullRequest, '--json', $fields)
 if ($viewResult.ExitCode -ne 0) {
     throw "Failed to fetch PR via 'gh pr view $PullRequest'. Confirm the PR reference is valid and you are authenticated ('gh auth status')."
@@ -126,10 +126,7 @@ if (-not $fileLines) {
 $fileList = $fileLines -join "`n"
 
 $repoFull = $null
-if ($pr.baseRepository -and $pr.baseRepository.owner -and $pr.baseRepository.owner.login -and $pr.baseRepository.name) {
-    $repoFull = "$($pr.baseRepository.owner.login)/$($pr.baseRepository.name)"
-}
-if (-not $repoFull -and $pr.url) {
+if ($pr.url) {
     $m = [regex]::Match($pr.url, 'github\.com/([^/]+)/([^/]+)/pull/')
     if ($m.Success) { $repoFull = "$($m.Groups[1].Value)/$($m.Groups[2].Value)" }
 }
